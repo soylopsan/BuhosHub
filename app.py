@@ -1,5 +1,4 @@
 from flask import Flask, render_template, flash, redirect, url_for, session, request, logging
-#from data import Articles
 from flask_mysqldb import MySQL
 from wtforms import Form, StringField, TextAreaField, PasswordField, validators
 from passlib.hash import sha256_crypt
@@ -11,65 +10,64 @@ app = Flask(__name__)
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = '123456'
-app.config['MYSQL_DB'] = 'myflaskapp'
+app.config['MYSQL_DB'] = 'buhoshub'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
-# iniciar MYSQL
+# Iniciar MYSQL
 mysql = MySQL(app)
 
-#Articles = Articles()
 
 # Inicio
 @app.route('/')
 def index():
-    return render_template('home.html')
+    return render_template('inicio.html')
 
 
 # Acerca de
-@app.route('/about')
-def about():
-    return render_template('about.html')
+@app.route('/acerca')
+def acerca():
+    return render_template('acerca.html')
 
 
-# entradas
-@app.route('/articles')
-def articles():
+# Materias
+@app.route('/materias')
+def entradas():
     # Crear cursor
     cur = mysql.connection.cursor()
 
     # Obtener entradas
-    result = cur.execute("SELECT * FROM articles")
+    result = cur.execute("SELECT * FROM entradas")
 
-    articles = cur.fetchall()
+    entradas = cur.fetchall()
 
     if result > 0:
-        return render_template('articles.html', articles=articles)
+        return render_template('materias.html', entradas=entradas)
     else:
         msg = 'Aún no hay entradas'
-        return render_template('articles.html', msg=msg)
+        return render_template('materias.html', msg=msg)
     # Cerrar conexion
     cur.close()
 
 
-#entrada
-@app.route('/article/<string:id>/')
-def article(id):
+# Materia
+@app.route('/materia/<string:id>/')
+def materia(id):
     # Crear cursor
     cur = mysql.connection.cursor()
 
     # Obtener entrada
-    result = cur.execute("SELECT * FROM articles WHERE id = %s", [id])
+    result = cur.execute("SELECT * FROM entradas WHERE id = %s", [id])
 
-    article = cur.fetchone()
+    entrada = cur.fetchone()
 
-    return render_template('article.html', article=article)
+    return render_template('materia.html', entrada=entrada)
 
 
-# Registro Form Class
-class RegisterForm(Form):
-    name = StringField('Nombre', [validators.Length(min=1, max=50)])
-    username = StringField('Nombre de usuario', [validators.Length(min=4, max=25)])
-    email = StringField('Correo electrónico', [validators.Length(min=6, max=50)])
-    password = PasswordField('Contraseña', [
+# Registrarse Form Class
+class RegistrarseForm(Form):
+    nombre = StringField('Nombre', [validators.Length(min=1, max=50)])
+    nombreusuario = StringField('Nombre de usuario', [validators.Length(min=4, max=25)])
+    correoelectronico = StringField('Correo electrónico', [validators.Length(min=6, max=50)])
+    contrasena = PasswordField('Contraseña', [
         validators.DataRequired(),
         validators.EqualTo('confirm', message='Las contraseñas no coinciden')
     ])
@@ -77,20 +75,20 @@ class RegisterForm(Form):
 
 
 # Registro de usuario
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    form = RegisterForm(request.form)
+@app.route('/registrarse', methods=['GET', 'POST'])
+def registrarse():
+    form = RegistrarseForm(request.form)
     if request.method == 'POST' and form.validate():
-        name = form.name.data
-        email = form.email.data
-        username = form.username.data
-        password = sha256_crypt.encrypt(str(form.password.data))
+        nombre = form.nombre.data
+        correoelectronico = form.correoelectronico.data
+        nombreusuario = form.nombreusuario.data
+        contrasena = sha256_crypt.encrypt(str(form.contrasena.data))
 
         # Crear cursor
         cur = mysql.connection.cursor()
 
         # Ejecutar query
-        cur.execute("INSERT INTO users(name, email, username, password) VALUES(%s, %s, %s, %s)", (name, email, username, password))
+        cur.execute("INSERT INTO usuarios(nombre, correoelectronico, nombreusuario, contrasena) VALUES(%s, %s, %s, %s)", (nombre, correoelectronico, nombreusuario, contrasena))
 
         # Commit a la base de datos
         mysql.connection.commit()
@@ -100,108 +98,108 @@ def register():
 
         flash('Listo, ahora puedes iniciar sesión', 'success')
 
-        return redirect(url_for('login'))
-    return render_template('register.html', form=form)
+        return redirect(url_for('iniciarSesion'))
+    return render_template('registrarse.html', form=form)
 
 
 # Inicio de sesion
-@app.route('/login', methods=['GET', 'POST'])
-def login():
+@app.route('/iniciarsesion', methods=['GET', 'POST'])
+def iniciarSesion():
     if request.method == 'POST':
         # Obtener Form Fields
-        username = request.form['username']
-        password_candidate = request.form['password']
+        nombreusuario = request.form['nombreusuario']
+        contra = request.form['contrasena']
 
         # Crear cursor
         cur = mysql.connection.cursor()
 
         # Obtener usuario por nombre de usuario
-        result = cur.execute("SELECT * FROM users WHERE username = %s", [username])
+        result = cur.execute("SELECT * FROM usuarios WHERE nombreusuario = %s", [nombreusuario])
 
         if result > 0:
             # Obtener hash
             data = cur.fetchone()
-            password = data['password']
+            contrasena = data['contrasena']
 
             # Comparar contraseñas
-            if sha256_crypt.verify(password_candidate, password):
+            if sha256_crypt.verify(contra, contrasena):
                 # Aprobado
-                session['logged_in'] = True
-                session['username'] = username
+                session['sesioniniciada'] = True
+                session['nombreusuario'] = nombreusuario
 
                 flash('Has iniciado sesión', 'success')
-                return redirect(url_for('dashboard'))
+                return redirect(url_for('misEntradas'))
             else:
                 error = 'Inicio de sesión inválido'
-                return render_template('login.html', error=error)
+                return render_template('iniciarsesion.html', error=error)
             # Cerrar conexion
             cur.close()
         else:
             error = 'Nombre de usuario no encontrado'
-            return render_template('login.html', error=error)
+            return render_template('iniciarsesion.html', error=error)
 
-    return render_template('login.html')
+    return render_template('iniciarsesion.html')
 
 # Revisar si se inicio sesion
-def is_logged_in(f):
+def sesionIniciada(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-        if 'logged_in' in session:
+        if 'sesioniniciada' in session:
             return f(*args, **kwargs)
         else:
             flash('Por favor, inicia sesión para ingresar aquí', 'danger')
-            return redirect(url_for('login'))
+            return redirect(url_for('iniciarSesion'))
     return wrap
 
 # Cerrar sesion
-@app.route('/logout')
-@is_logged_in
-def logout():
+@app.route('/cerrarsesion')
+@sesionIniciada
+def cerrarSesion():
     session.clear()
     flash('Has cerrado sesión', 'success')
-    return redirect(url_for('login'))
+    return redirect(url_for('iniciarSesion'))
 
 # Mis entradas
-@app.route('/dashboard')
-@is_logged_in
-def dashboard():
+@app.route('/misentradas')
+@sesionIniciada
+def misEntradas():
     # Crear cursor
     cur = mysql.connection.cursor()
 
     # Obtener entradas
-    #result = cur.execute("SELECT * FROM articles")
+    #result = cur.execute("SELECT * FROM entradas")
     # Mostrar entradas del usuario
-    result = cur.execute("SELECT * FROM articles WHERE author = %s", [session['username']])
+    result = cur.execute("SELECT * FROM entradas WHERE editor = %s", [session['nombreusuario']])
 
-    articles = cur.fetchall()
+    entradas = cur.fetchall()
 
     if result > 0:
-        return render_template('dashboard.html', articles=articles)
+        return render_template('misentradas.html', entradas=entradas)
     else:
-        msg = 'No se encontrado entradas'
-        return render_template('dashboard.html', msg=msg)
+        msg = 'No se han encontrado entradas'
+        return render_template('misentradas.html', msg=msg)
     # Cerrar conexion
     cur.close()
 
 # entrada Form Class
-class ArticleForm(Form):
-    title = StringField('Título', [validators.Length(min=1, max=200)])
-    body = TextAreaField('Descripción', [validators.Length(min=30)])
+class EntradaForm(Form):
+    materia = StringField('Materia', [validators.Length(min=1, max=200)])
+    descripcion = TextAreaField('Descripción', [validators.Length(min=30)])
 
 # Agregar entrada
-@app.route('/add_article', methods=['GET', 'POST'])
-@is_logged_in
-def add_article():
-    form = ArticleForm(request.form)
+@app.route('/agregarentrada', methods=['GET', 'POST'])
+@sesionIniciada
+def agregarEntrada():
+    form = EntradaForm(request.form)
     if request.method == 'POST' and form.validate():
-        title = form.title.data
-        body = form.body.data
+        materia = form.materia.data
+        descripcion = form.descripcion.data
 
         # Crear Cursor
         cur = mysql.connection.cursor()
 
         # Ejecutar
-        cur.execute("INSERT INTO articles(title, body, author) VALUES(%s, %s, %s)",(title, body, session['username']))
+        cur.execute("INSERT INTO entradas(materia, descripcion, editor) VALUES(%s, %s, %s)",(materia, descripcion, session['nombreusuario']))
 
         # Commit a la base de datos
         mysql.connection.commit()
@@ -211,39 +209,39 @@ def add_article():
 
         flash('Entrada creada', 'success')
 
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('misEntradas'))
 
-    return render_template('add_article.html', form=form)
+    return render_template('agregarentrada.html', form=form)
 
 
 # Modificar entrada
-@app.route('/edit_article/<string:id>', methods=['GET', 'POST'])
-@is_logged_in
-def edit_article(id):
+@app.route('/modificarentrada/<string:id>', methods=['GET', 'POST'])
+@sesionIniciada
+def modificarEntrada(id):
     # Crear cursor
     cur = mysql.connection.cursor()
 
     # Obtener entrada por id
-    result = cur.execute("SELECT * FROM articles WHERE id = %s", [id])
+    result = cur.execute("SELECT * FROM entradas WHERE id = %s", [id])
 
-    article = cur.fetchone()
+    entrada = cur.fetchone()
     cur.close()
     # Obtener form
-    form = ArticleForm(request.form)
+    form = EntradaForm(request.form)
 
     # entrada form fields
-    form.title.data = article['title']
-    form.body.data = article['body']
+    form.materia.data = entrada['materia']
+    form.descripcion.data = entrada['descripcion']
 
     if request.method == 'POST' and form.validate():
-        title = request.form['title']
-        body = request.form['body']
+        materia = request.form['materia']
+        descripcion = request.form['descripcion']
 
         # Crear Cursor
         cur = mysql.connection.cursor()
-        app.logger.info(title)
+        app.logger.info(materia)
         # Ejecutar
-        cur.execute ("UPDATE articles SET title=%s, body=%s WHERE id=%s",(title, body, id))
+        cur.execute ("UPDATE entradas SET materia=%s, descripcion=%s WHERE id=%s",(materia, descripcion, id))
         # Commit a la base de datos
         mysql.connection.commit()
 
@@ -252,19 +250,19 @@ def edit_article(id):
 
         flash('Entrada actualizada', 'success')
 
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('misEntradas'))
 
-    return render_template('edit_article.html', form=form)
+    return render_template('modificarentrada.html', form=form)
 
 # Eliminar entrada
-@app.route('/delete_article/<string:id>', methods=['POST'])
-@is_logged_in
-def delete_article(id):
+@app.route('/eliminarentrada/<string:id>', methods=['POST'])
+@sesionIniciada
+def eliminarEntrada(id):
     # Crear cursor
     cur = mysql.connection.cursor()
 
     # Ejecutar
-    cur.execute("DELETE FROM articles WHERE id = %s", [id])
+    cur.execute("DELETE FROM entradas WHERE id = %s", [id])
 
     # Commit a la base de datos
     mysql.connection.commit()
@@ -274,7 +272,7 @@ def delete_article(id):
 
     flash('Entrada eliminada', 'success')
 
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('misEntradas'))
 
 if __name__ == '__main__':
     app.secret_key='secret123'

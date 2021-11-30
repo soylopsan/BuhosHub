@@ -1,0 +1,32 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>Mis entradas <small> Bienvenid@ {{session.nombreusuario}}</small></h1>
+  <a class="btn btn-success" href="/agregarentrada"> Agregar entrada</a>
+  <hr>
+  <table class="table table-striped">
+    <tr>
+      <th>ID</th>
+      <th>Materia</th>
+      <th>Autor</th>
+      <th>Fecha</th>
+      <th></th>
+      <th></th>
+    </tr>
+    {% for entrada in entradas %}
+      <tr>
+        <td>{{entrada.id}}</td>
+        <td>{{entrada.materia}}</td>
+        <td>{{entrada.editor}}</td>
+        <td>{{entrada.fechacreacion}}</td>
+        <td><a href="modificarentrada/{{entrada.id}}" class="btn btn-default pull-right">Modificar</a></td>
+        <td>
+          <form action="{{url_for('eliminarEntrada', id=entrada.id)}}" method="post">
+            <input type="hidden" name="_method" value="DELETE">
+            <input type="submit" value="Eliminar" class="btn btn-danger">
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+{% endblock %}

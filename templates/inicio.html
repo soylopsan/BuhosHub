@@ -4,9 +4,9 @@
   <div class="jumbotron text-center">
     <h1>BuhosHub</h1>
     <p class="lead">En esta plataforma encontrarás información de tus materias y material de ayuda.</p>
-    {% if session.logged_in == NULL %}
-      <a href="/register" class="btn btn-primary btn-lg">Registro</a>
-      <a href="/login" class="btn btn-success btn-lg">Iniciar Sesión</a>
+    {% if session.sesioniniciada == NULL %}
+      <a href="/registrarse" class="btn btn-primary btn-lg">Registrarse</a>
+      <a href="/iniciarsesion" class="btn btn-success btn-lg">Iniciar Sesión</a>
     {% endif %}
   </div>
 {% endblock %}

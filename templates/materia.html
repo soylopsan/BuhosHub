@@ -1,0 +1,10 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>{{entrada.materia}}</h1>
+  <small>Editada por {{entrada.editor}} el {{entrada.fechacreacion}}</small>
+  <hr>
+  <div>
+    {{entrada.descripcion | safe}}
+  </div>
+{% endblock %}

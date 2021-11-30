@@ -3,8 +3,8 @@
 {% block body %}
   <h1>Materias</h1>
   <ul class="list-group">
-    {% for article in articles %}
-      <li class="list-group-item"><a href="article/{{article.id}}">{{article.title}}</a></li>
+    {% for entrada in entradas %}
+      <li class="list-group-item"><a href="materia/{{entrada.id}}">{{entrada.materia}}</a></li>
     {% endfor %}
   </ul>
 {% endblock %}
